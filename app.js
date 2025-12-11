@@ -61,7 +61,7 @@ function updateNotifyButton() {
         elements.notifyBtn.disabled = true;
         return;
     }
-    
+
     if (!('Notification' in window)) {
         elements.notifyBtn.textContent = '🔔 Notifications non supportées';
         elements.notifyBtn.disabled = true;
@@ -69,7 +69,7 @@ function updateNotifyButton() {
     }
 
     const permission = Notification.permission;
-    
+
     if (permission === 'granted') {
         elements.notifyBtn.textContent = '✅ Notifications activées';
         elements.notifyBtn.classList.add('granted');
@@ -98,7 +98,7 @@ async function requestNotificationPermission() {
     try {
         const permission = await Notification.requestPermission();
         updateNotifyButton();
-        
+
         if (permission === 'granted') {
             // Notification de test
             new Notification('MétéoPWA', {
@@ -113,12 +113,12 @@ async function requestNotificationPermission() {
 }
 
 function sendWeatherNotification(city, message, type = 'info') {
-  
+
 }
 // ===== Recherche et API Météo =====
 async function handleSearch() {
     const query = elements.cityInput.value.trim();
-    
+
     if (!query) {
         showError('Veuillez entrer un nom de ville.');
         return;
@@ -132,21 +132,21 @@ async function handleSearch() {
         const geoResponse = await fetch(
             `${CONFIG.GEOCODING_API}?name=${encodeURIComponent(query)}&count=1&language=fr&format=json`
         );
-        
+
         if (!geoResponse.ok) throw new Error('Erreur de géocodage');
-        
+
         const geoData = await geoResponse.json();
-        
+
         if (!geoData.results || geoData.results.length === 0) {
             throw new Error(`Ville "${query}" non trouvée. Vérifiez l'orthographe.`);
         }
 
         const location = geoData.results[0];
         const cityName = `${location.name}${location.admin1 ? ', ' + location.admin1 : ''}, ${location.country}`;
-        
+
         // 2. Récupérer la météo
         await fetchWeather(location.latitude, location.longitude, cityName);
-        
+
     } catch (error) {
         hideLoading();
         showError(error.message);
@@ -168,18 +168,18 @@ async function fetchWeather(lat, lon, cityName) {
         if (!weatherResponse.ok) throw new Error('Erreur lors de la récupération des données météo');
 
         const weatherData = await weatherResponse.json();
-        
+
         // Sauvegarder la ville courante
         currentCity = { name: cityName, lat, lon };
-        
+
         // Afficher les résultats
         displayWeather(weatherData, cityName);
-        
+
         // Vérifier les alertes pour les 4 prochaines heures
         checkWeatherAlerts(weatherData, cityName);
-        
+
         hideLoading();
-        
+
     } catch (error) {
         hideLoading();
         showError(error.message);
@@ -201,7 +201,7 @@ function displayWeather(data, cityName) {
     // Prévisions horaires (4 prochaines heures)
     const currentHour = new Date().getHours();
     const hourlyItems = [];
-    
+
     for (let i = 0; i < 4; i++) {
         const hourIndex = currentHour + i + 1;
         if (hourIndex < hourly.time.length) {
@@ -210,7 +210,7 @@ function displayWeather(data, cityName) {
             const code = hourly.weather_code[hourIndex];
             const isRain = CONFIG.RAIN_CODES.includes(code);
             const isHighTemp = temp > CONFIG.TEMP_THRESHOLD;
-            
+
             let alertClass = '';
             if (isRain) alertClass = 'rain-alert';
             else if (isHighTemp) alertClass = 'temp-alert';
@@ -232,7 +232,7 @@ function displayWeather(data, cityName) {
 function checkWeatherAlerts(data, cityName) {
     const hourly = data.hourly;
     const currentHour = new Date().getHours();
-    
+
     let rainAlert = false;
     let tempAlert = false;
     let rainHour = null;
@@ -244,13 +244,13 @@ function checkWeatherAlerts(data, cityName) {
         if (hourIndex < hourly.time.length) {
             const code = hourly.weather_code[hourIndex];
             const temp = hourly.temperature_2m[hourIndex];
-            
+
             // Vérifier la pluie
             if (!rainAlert && CONFIG.RAIN_CODES.includes(code)) {
                 rainAlert = true;
                 rainHour = i;
             }
-            
+
             // Vérifier la température > 10°C
             if (!tempAlert && temp > CONFIG.TEMP_THRESHOLD) {
                 tempAlert = true;
@@ -309,7 +309,7 @@ function getWeatherEmoji(code) {
         96: '⛈️',     // Thunderstorm with slight hail
         99: '⛈️'      // Thunderstorm with heavy hail
     };
-    
+
     return weatherEmojis[code] || '🌤️';
 }
 
@@ -347,9 +347,9 @@ elements.notifyBtn.addEventListener('click', requestNotificationPermission);
 // Ajouter aux favoris
 elements.favoriteBtn.addEventListener('click', () => {
     if (!currentCity) return showError('Aucune ville sélectionnée.');
-    
+
     const favorites = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_FAVORITES) || '[]');
-    
+
     if (!favorites.find(f => f.name === currentCity.name)) {
         favorites.push(currentCity);
         localStorage.setItem(CONFIG.STORAGE_KEY_FAVORITES, JSON.stringify(favorites));
@@ -361,7 +361,13 @@ elements.favoriteBtn.addEventListener('click', () => {
 elements.themeToggle.addEventListener('click', () => {
     document.body.classList.toggle('dark-theme');
     document.body.classList.toggle('light-theme');
-    
+
+    if (document.body.classList.contains('dark-theme')) {
+        elements.themeToggle.textContent = '🌙';
+    } else {
+        elements.themeToggle.textContent = '🔆';
+    }
+
     localStorage.setItem(
         CONFIG.STORAGE_KEY_THEME,
         document.body.classList.contains('dark-theme') ? 'dark' : 'light'
@@ -375,7 +381,7 @@ function loadFavorites() {
     elements.favoritesList.innerHTML = favorites.map(fav => `
         <div class="favorite-item">
             <span>${fav.name}</span>
-            <button onclick="fetchWeather(${fav.lat}, ${fav.lon}, '${fav.name}')">📍</button>
+            <a class="fetch-weather-favoris" onclick="fetchWeather(${fav.lat}, ${fav.lon}, '${fav.name}')">📍</a>
         </div>
     `).join('');
 
@@ -386,13 +392,14 @@ function loadFavorites() {
 document.addEventListener('DOMContentLoaded', () => {
     updateNotifyButton();
     registerServiceWorker();
-    
+
     // Charger thème
     const savedTheme = localStorage.getItem(CONFIG.STORAGE_KEY_THEME);
     if (savedTheme === 'dark') {
+        elements.themeToggle.textContent = '🌙';
         document.body.classList.add('dark-theme');
         document.body.classList.remove('light-theme');
     }
-    
+
     loadFavorites();
 });

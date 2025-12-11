@@ -1,17 +1,250 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meteo PWA</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="icons/icon-192x192.png">
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Météo PWA — Mobile</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: 0.3s;
+        }
+
+        :root {
+            --bg: #f2f2f2;
+            --text: #222;
+            --card: rgba(255, 255, 255, 0.7);
+            --border: rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-theme {
+            --bg: #0e0e0e;
+            --text: #eaeaea;
+            --card: rgba(20, 20, 20, 0.6);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        h2 {
+            font-size: 1.4rem;
+        }
+
+        .container {
+            padding: 15px;
+        }
+
+        .search-box {
+            margin-top: 10px;
+            position: relative;
+        }
+
+        #city-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            font-size: 16px;
+        }
+
+        .dark-theme #city-input {
+            color: #eaeaea;
+        }
+
+        #search-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: #4b8bff;
+            color: white;
+            border: none;
+            font-size: 16px;
+        }
+
+        #search-suggestions {
+            position: absolute;
+            top: 50px;
+            width: 100%;
+            background: var(--card);
+            backdrop-filter: blur(6px);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+            overflow: hidden;
+            z-index: 20;
+        }
+
+        .suggestion {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .suggestion:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion:hover {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+
+        .weather-card {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 18px;
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+        }
+
+        .temp-display {
+            font-size: 54px;
+            text-align: center;
+        }
+
+        .hourly-list {
+            margin-top: 15px;
+            display: flex;
+            gap: 12px;
+            overflow-x: scroll;
+            padding-bottom: 10px;
+        }
+
+        .hourly-item {
+            padding: 12px;
+            min-width: 80px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.15);
+            text-align: center;
+        }
+
+        .rain-alert {
+            background: rgba(50, 120, 255, 0.35);
+        }
+
+        .temp-alert {
+            background: rgba(255, 120, 50, 0.35);
+        }
+
+        #favorites-section {
+            margin-top: 20px;
+        }
+
+        .favorite-item {
+            padding: 14px;
+            margin-top: 10px;
+            border-radius: 12px;
+            background: var(--card);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .dark-theme #notify-btn {
+            color: #eaeaea;
+        }
+
+        #notify-btn,
+        #theme-toggle {
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            margin-left: 10px;
+        }
+
+        #loading {
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .fetch-weather-favoris {
+            cursor: pointer;
+        }
+
+        #logo-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
 </head>
 
-<body>
-    <h1>Hello world</h1>
+<body class="light-theme">
+    <header>
+        <div id="logo-container">
+            <img src="icons/icon-192.png" alt="Météo Logo" width="32" height="32" />
+            <h2>Météo</h2>
+        </div>
+
+        <div>
+            <button id="notify-btn">🔔</button>
+            <button id="theme-toggle">🌙</button>
+        </div>
+
+        <div id="loading" class="hidden">⏳ Chargement...</div>
+    </header>
+
+    <div class="container">
+        <div class="search-box">
+            <input id="city-input" placeholder="Rechercher une ville..." />
+            <div id="search-suggestions"></div>
+        </div>
+        <button id="search-btn">Rechercher</button>
+
+        <div id="error-message" class="hidden" style="color:red;"></div>
+
+        <section id="weather-section" class="hidden weather-card">
+            <h3 id="city-name"></h3>
+            <div class="temp-display">
+                <span id="weather-icon"></span>
+                <span id="temperature"></span>°C
+            </div>
+
+            <p>Vent : <span id="wind"></span></p>
+            <p>Humidité : <span id="humidity"></span></p>
+            <p>Ressenti : <span id="feels-like"></span></p>
+
+            <button id="favorite-btn"
+                style="margin-top:10px; width:100%; padding:12px; border-radius:12px; border:none; background:#ffaa2b; color:#fff; font-size:16px;">⭐
+                Ajouter aux favoris</button>
+
+            <h4 style="margin-top:20px;">Prévisions (4h)</h4>
+            <div id="hourly-list" class="hourly-list"></div>
+        </section>
+
+        <section id="favorites-section" class="hidden">
+            <h3>Favoris</h3>
+            <div id="favorites-list"></div>
+        </section>
+    </div>
 
     <script src="app.js"></script>
 </body>
