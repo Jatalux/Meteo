@@ -104,7 +104,7 @@ async function requestNotificationPermission() {
             new Notification('MétéoPWA', {
                 body: 'Les notifications sont maintenant activées ! 🎉',
                 icon: 'icons/icon-192.png',
-                tag: 'welcome'
+                tag: `welcome-${Date.now()}`
             });
         }
     } catch (error) {
@@ -112,13 +112,15 @@ async function requestNotificationPermission() {
     }
 }
 
-function sendWeatherNotification(city, message, type = 'info') {
-    // if (Notification.permission !== 'granted') return;
+async function sendWeatherNotification(city, message, type = 'info') {
+    const permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') return;
 
     new Notification(`Météo à ${city}`, {
         body: message,
         icon: 'icons/icon-192.png',
-        tag: `${type}-alert-${city}`
+        tag: `${type}-alert-${city}-${Date.now()}`
     });
 }
 
