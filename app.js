@@ -113,8 +113,15 @@ async function requestNotificationPermission() {
 }
 
 function sendWeatherNotification(city, message, type = 'info') {
+    if (Notification.permission !== 'granted') return;
 
+    new Notification(`Météo à ${city}`, {
+        body: message,
+        icon: 'icons/icon-192.png',
+        tag: `${type}-alert-${city}`
+    });
 }
+
 // ===== Recherche et API Météo =====
 async function handleSearch() {
     const query = elements.cityInput.value.trim();
@@ -179,6 +186,12 @@ async function fetchWeather(lat, lon, cityName) {
         checkWeatherAlerts(weatherData, cityName);
 
         hideLoading();
+
+        sendWeatherNotification(
+            cityName,
+            `🌧️ Pluie prévue dans 1 heures !`,
+            'rain'
+        );
 
     } catch (error) {
         hideLoading();
