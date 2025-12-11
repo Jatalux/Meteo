@@ -115,13 +115,16 @@ async function requestNotificationPermission() {
 async function sendWeatherNotification(city, message, type = 'info') {
     const permission = await Notification.requestPermission();
 
-    if (permission !== 'granted') return;
+    if (permission !== "granted") return;
 
-    new Notification(`Météo à ${city}`, {
+    const reg = await navigator.serviceWorker.getRegistration();
+
+    reg.showNotification(`Météo à ${city}`, {
         body: message,
-        icon: 'icons/icon-192.png',
+        icon: "icons/icon-192.png",
         tag: `${type}-alert-${city}-${Date.now()}`
     });
+
 }
 
 // ===== Recherche et API Météo =====
