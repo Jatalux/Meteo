@@ -113,7 +113,7 @@ async function requestNotificationPermission() {
 }
 
 function sendWeatherNotification(city, message, type = 'info') {
-    if (Notification.permission !== 'granted') return;
+    // if (Notification.permission !== 'granted') return;
 
     new Notification(`Météo à ${city}`, {
         body: message,
