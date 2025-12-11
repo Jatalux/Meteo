@@ -113,11 +113,9 @@ async function requestNotificationPermission() {
 }
 
 async function sendWeatherNotification(city, message, type = 'info') {
-    const permission = await Notification.requestPermission();
+    if(Notification.permission !== 'granted') return;
 
-    if (permission !== "granted") return;
-
-    const reg = await navigator.serviceWorker.getRegistration();
+    const reg = await navigator.serviceWorker.ready;
 
     reg.showNotification(`Météo à ${city}`, {
         body: message,
