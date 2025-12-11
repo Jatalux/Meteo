@@ -42,8 +42,20 @@ document.addEventListener('DOMContentLoaded', () => {
 async function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         try {
-            const registration = await navigator.serviceWorker.register('/Meteo/service-worker.js');
-            console.log('✅ Service Worker enregistré:', registration.scope);
+            const registration = await navigator.serviceWorker.register('./service-worker.js');
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'activated') {
+                        window.location.reload();
+                    }
+                });
+            });
+
+            setInterval(() => {
+                registration.update();
+            }, 10000);
+
         } catch (error) {
             console.error('❌ Erreur Service Worker:', error);
         }
@@ -113,15 +125,21 @@ async function requestNotificationPermission() {
 }
 
 async function sendWeatherNotification(city, message, type = 'info') {
-    if(Notification.permission !== 'granted') return;
+    try {
+        const permission = await Notification.requestPermission();
+        updateNotifyButton();
 
-    const reg = await navigator.serviceWorker.ready;
-
-    reg.showNotification(`Météo à ${city}`, {
-        body: message,
-        icon: "icons/icon-192.png",
-        tag: `${type}-alert-${city}-${Date.now()}`
-    });
+        if (permission === 'granted') {
+            // Notification de test
+            new Notification(`Météo à ${city}`, {
+                body: message,
+                icon: 'icons/icon-192.png',
+                tag: `${type}-alert-${city}`
+            });
+        }
+    } catch (error) {
+        console.error('Erreur lors de la demande de permission:', error);
+    }
 
 }
 
