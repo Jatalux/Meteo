@@ -112,12 +112,18 @@ async function requestNotificationPermission() {
         updateNotifyButton();
 
         if (permission === 'granted') {
-            // Notification de test
-            new Notification('MétéoPWA', {
+            const notif = new Notification('MétéoPWA', {
                 body: 'Les notifications sont maintenant activées ! 🎉',
-                icon: 'icons/icon-192.png',
-                tag: `welcome-${Date.now()}`
+                icon: './icons/icon-192.png',
+                tag: 'welcome',
             });
+
+            notif.onclick = () => {
+                window.focus();
+                notif.close();
+            };
+
+            setTimeout(() => hideError(), 3000);
         }
     } catch (error) {
         console.error('Erreur lors de la demande de permission:', error);
