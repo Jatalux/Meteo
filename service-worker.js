@@ -1,5 +1,5 @@
 // ===== CONFIGURATION =====
-const CACHE_NAME = 'meteo-pwa-v1.2.2';
+const CACHE_NAME = 'meteo-pwa-v1.2.3';
 const ASSETS = [
     '/Meteo/',
     '/Meteo/index.html',
@@ -133,7 +133,7 @@ async function cacheFirst(request) {
 
         // Si c'est une page HTML, retourner la page d'accueil en cache
         if (request.headers.get('accept')?.includes('text/html')) {
-            const fallback = await caches.match('/index.html');
+            const fallback = await caches.match('/Meteo/index.html');
             if (fallback) return fallback;
         }
 

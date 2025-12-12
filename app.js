@@ -130,7 +130,7 @@ async function requestNotificationPermission() {
     }
 }
 
-async function sendWeatherNotification(city, message, type = 'info') {
+function sendWeatherNotification(city, message, type = 'info') {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
@@ -178,7 +178,7 @@ async function handleSearch() {
         }
 
         const location = geoData.results[0];
-        const cityName = `${location.name}${location.admin1 ? ', ' + location.admin1 : ''}, ${location.country}`;
+        const cityName = `${location.name}, ${location.country}`;
 
         // 2. Récupérer la météo
         await fetchWeather(location.latitude, location.longitude, cityName);
