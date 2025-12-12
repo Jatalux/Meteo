@@ -131,22 +131,23 @@ async function requestNotificationPermission() {
 }
 
 async function sendWeatherNotification(city, message, type = 'info') {
-    try {
-        const permission = await Notification.requestPermission();
-        updateNotifyButton();
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-        if (permission === 'granted') {
-            // Notification de test
-            new Notification(`Météo à ${city}`, {
-                body: message,
-                icon: 'icons/icon-192.png',
-                tag: `${type}-alert-${city}`
-            });
-        }
-    } catch (error) {
-        console.error('Erreur lors de la demande de permission:', error);
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'SHOW_NOTIFICATION',
+            title: `Météo - ${city}`,
+            body: message,
+            tag: `${type}-${city}`,
+            icon: 'icons/icon-192.png'
+        });
+    } else {
+        new Notification(`Météo - ${city}`, {
+            body: message,
+            icon: 'icons/icon-192.png',
+            tag: `${type}-${city}`
+        });
     }
-
 }
 
 // ===== Recherche et API Météo =====
