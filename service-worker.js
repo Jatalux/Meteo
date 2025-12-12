@@ -1,5 +1,5 @@
 // ===== CONFIGURATION =====
-const CACHE_NAME = 'meteo-pwa-v1.2';
+const CACHE_NAME = 'meteo-pwa-v1.2.2';
 const ASSETS = [
     '/Meteo/',
     '/Meteo/index.html',
@@ -84,7 +84,7 @@ self.addEventListener('fetch', (event) => {
 // ===== Détection des requêtes API =====
 function isApiRequest(url) {
     return url.hostname.includes('open-meteo.com') ||
-           url.hostname.includes('geocoding-api');
+        url.hostname.includes('geocoding-api');
 }
 
 // ===== Stratégie : Network Only =====
@@ -111,7 +111,7 @@ async function networkOnly(request) {
 // Pour les assets statiques : cache d'abord, réseau en fallback
 async function cacheFirst(request) {
     const cachedResponse = await caches.match(request);
-    
+
     if (cachedResponse) {
         // Réponse trouvée dans le cache
         return cachedResponse;
@@ -120,23 +120,23 @@ async function cacheFirst(request) {
     try {
         // Pas dans le cache, on essaie le réseau
         const networkResponse = await fetch(request);
-        
+
         // Si succès, on met en cache pour la prochaine fois
         if (networkResponse.ok) {
             const cache = await caches.open(CACHE_NAME);
             cache.put(request, networkResponse.clone());
         }
-        
+
         return networkResponse;
     } catch (error) {
         console.log('[SW] Erreur réseau pour asset:', request.url);
-        
+
         // Si c'est une page HTML, retourner la page d'accueil en cache
         if (request.headers.get('accept')?.includes('text/html')) {
             const fallback = await caches.match('/index.html');
             if (fallback) return fallback;
         }
-        
+
         // Sinon, erreur
         return new Response('Contenu non disponible hors-ligne', {
             status: 503,
@@ -145,10 +145,45 @@ async function cacheFirst(request) {
     }
 }
 
+// ===== Gestion des clics sur les notifications =====
+self.addEventListener('notificationclick', (event) => {
+    console.log('[SW] Notification cliquée:', event.notification.tag);
+    event.notification.close();
+
+    // Ouvrir ou ramener au premier plan la fenêtre
+    event.waitUntil(
+        clients.matchAll({ type: 'window' }).then((clientList) => {
+            // Chercher un client existant
+            for (let client of clientList) {
+                if (client.url === '/' || client.url.includes('/Meteo/')) {
+                    return client.focus();
+                }
+            }
+            // Sinon, ouvrir une nouvelle fenêtre
+            return clients.openWindow('/Meteo/')
+                .then(client => client ? client.focus() : null);
+        })
+    );
+});
+
+
 // ===== Messages depuis l'application =====
 self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SKIP_WAITING') {
+    if (!event.data) return;
+
+    if (event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
+    }
+
+    if (event.data.type === 'SHOW_NOTIFICATION') {
+        const { title, body, tag, icon } = event.data;
+        self.registration.showNotification(title || 'Notification', {
+            body: body || '',
+            icon: icon || '/Meteo/icons/icon-192.png',
+            badge: '/Meteo/icons/icon-192.png',
+            tag: tag || 'meteo',
+            requireInteraction: false
+        });
     }
 });
 
