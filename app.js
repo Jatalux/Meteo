@@ -130,24 +130,18 @@ async function requestNotificationPermission() {
     }
 }
 
-function sendWeatherNotification(city, message, type = 'info') {
+async function sendWeatherNotification(city, message, type = 'info') {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-            type: 'SHOW_NOTIFICATION',
-            title: `Météo - ${city}`,
-            body: message,
-            tag: `${type}-${city}`,
-            icon: 'icons/icon-192.png'
-        });
-    } else {
-        new Notification(`Météo - ${city}`, {
-            body: message,
-            icon: 'icons/icon-192.png',
-            tag: `${type}-${city}`
-        });
-    }
+    const reg = await navigator.serviceWorker.ready;
+
+    reg.active.postMessage({
+        type: 'SHOW_NOTIFICATION',
+        title: `Météo - ${city}`,
+        body: message,
+        tag: `${type}-${city}`,
+        icon: '/Meteo/icons/icon-192.png'
+    });
 }
 
 // ===== Recherche et API Météo =====
