@@ -152,6 +152,7 @@ async function sendWeatherNotification(city, message, type = 'info') {
 
 // ===== Recherche et API Météo =====
 async function handleSearch() {
+    requestNotificationPermission()
     const query = elements.cityInput.value.trim();
 
     if (!query) {
@@ -210,16 +211,22 @@ async function fetchWeather(lat, lon, cityName) {
         // Afficher les résultats
         displayWeather(weatherData, cityName);
 
+        // Notification de test à chaque recherche
+        const temp = Math.round(weatherData.current.temperature_2m);
+        const emoji = getWeatherEmoji(weatherData.current.weather_code);
+        sendWeatherNotification(
+            cityName,
+            `${emoji} Température actuelle: ${temp}°C`,
+            'search'
+        );
+        
+        // Vérifier les alertes pour les 4 prochaines heures
+        checkWeatherAlerts(weatherData, cityName);
+        
         // Vérifier les alertes pour les 4 prochaines heures
         checkWeatherAlerts(weatherData, cityName);
 
         hideLoading();
-
-        sendWeatherNotification(
-            cityName,
-            `🌧️ Pluie prévue dans 1 heures !`,
-            'rain'
-        );
 
     } catch (error) {
         hideLoading();
